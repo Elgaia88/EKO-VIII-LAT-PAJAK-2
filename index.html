@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Teori Perpajakan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        /* Custom animation for fading in screens */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Option button transitions */
+        .option-btn {
+            transition: all 0.2s ease;
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .option-btn:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        /* Specific state colors with !important to override hover states when answered */
+        .btn-correct {
+            background-color: #22c55e !important; /* green-500 */
+            color: #ffffff !important;
+            border-color: #16a34a !important; /* green-600 */
+        }
+        .btn-wrong {
+            background-color: #ef4444 !important; /* red-500 */
+            color: #ffffff !important;
+            border-color: #dc2626 !important; /* red-600 */
+        }
+        .btn-default {
+            background-color: #1e3a8a; /* blue-900 - High contrast with white text */
+            color: #ffffff;
+            border: 1px solid #1e40af;
+        }
+        .btn-default:hover:not(:disabled) {
+            background-color: #1e40af; /* blue-800 */
+        }
+        
+        /* Custom Scrollbar for review section */
+        .review-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .review-container::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .review-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 4px;
+        }
+        .review-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6 text-gray-800">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden relative">
+        
+        <!-- Header -->
+        <header class="bg-blue-600 text-white p-4 sm:p-6 text-center shadow-md relative z-10">
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Kuis Teori Perpajakan</h1>
+        </header>
+
+        <!-- ================= START SCREEN ================= -->
+        <div id="start-screen" class="p-6 sm:p-10 fade-in">
+            <div class="max-w-md mx-auto space-y-6">
+                <p class="text-center text-gray-600 mb-8">Uji pengetahuan Anda tentang dasar-dasar perpajakan Indonesia berdasarkan materi teori universal.</p>
+                
+                <div id="error-msg" class="hidden text-red-500 text-sm font-medium text-center bg-red-50 p-2 rounded border border-red-200">
+                    Silakan masukkan nama Anda terlebih dahulu.
+                </div>
+
+                <div>
+                    <label for="player-name" class="block text-sm font-semibold text-gray-700 mb-2">Nama Pemain</label>
+                    <input type="text" id="player-name" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow" placeholder="Masukkan nama Anda..." autocomplete="off">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Pilih Durasi per Soal</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="duration" value="15" class="peer sr-only" checked>
+                            <div class="w-full p-3 text-center rounded-lg border border-gray-300 peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 hover:bg-gray-50 transition-colors font-medium">
+                                15 Detik
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="duration" value="30" class="peer sr-only">
+                            <div class="w-full p-3 text-center rounded-lg border border-gray-300 peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 hover:bg-gray-50 transition-colors font-medium">
+                                30 Detik
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <button onclick="startQuiz()" class="w-full mt-4 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 hover:shadow-lg transition-all active:scale-[0.98]">
+                    Mulai Kuis
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= QUIZ SCREEN ================= -->
+        <div id="quiz-screen" class="hidden flex-col h-full fade-in relative">
+            
+            <!-- Progress and Timer Bar -->
+            <div class="flex justify-between items-center px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200 gap-2">
+                <div class="text-sm font-semibold text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100 whitespace-nowrap">
+                    Soal: <span id="current-q-num" class="text-blue-600 text-lg">1</span><span class="text-xs">/30</span>
+                </div>
+                
+                <div class="text-sm font-bold text-gray-700 truncate hidden sm:block px-2 max-w-[200px]" id="quiz-player-name-display">
+                    <!-- Name -->
+                </div>
+
+                <div class="flex items-center gap-2 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="text-lg font-bold text-gray-800 w-8 text-center" id="timer-display">15</div>
+                </div>
+            </div>
+
+            <!-- Timer Progress Bar -->
+            <div class="w-full h-1 bg-gray-200">
+                <div id="timer-bar" class="h-full bg-red-500 transition-all duration-1000 ease-linear w-full"></div>
+            </div>
+
+            <!-- Question Area -->
+            <div class="p-6 sm:p-8 flex-grow">
+                <h2 id="question-text" class="text-lg sm:text-xl font-medium text-gray-800 mb-8 leading-relaxed min-h-[4rem]">
+                    <!-- Question will appear here -->
+                </h2>
+
+                <div id="options-container" class="space-y-3">
+                    <!-- Options will be injected here via JS -->
+                </div>
+            </div>
+            
+            <!-- Status Message (for timeout or correct/wrong feedback) -->
+            <div id="status-msg" class="h-10 text-center font-bold text-lg opacity-0 transition-opacity duration-300 flex items-center justify-center">
+                <!-- Status text -->
+            </div>
+        </div>
+
+        <!-- ================= END SCREEN ================= -->
+        <div id="end-screen" class="hidden flex-col h-full fade-in pb-6">
+            <div class="p-6 text-center bg-blue-50 border-b border-blue-100">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">Hasil Kuis</h2>
+                <p class="text-gray-600 font-medium text-lg">Pemain: <span id="display-name" class="text-blue-700 font-bold"></span></p>
+                
+                <div class="mt-6 inline-block bg-white rounded-2xl shadow-lg px-8 py-6 border border-gray-100">
+                    <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Nilai Akhir</p>
+                    <div class="text-5xl font-extrabold text-blue-600" id="final-score">100</div>
+                    <div class="text-sm text-gray-500 mt-2 font-medium">Benar <span id="correct-count">30</span> dari 30 Soal</div>
+                </div>
+            </div>
+
+            <!-- Review Section -->
+            <div class="px-6 py-4 flex-grow">
+                <h3 class="font-bold text-gray-700 mb-4 text-lg border-b pb-2">Review Jawaban</h3>
+                <div id="review-list" class="review-container space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+                    <!-- Review items injected here -->
+                </div>
+            </div>
+
+            <div class="px-6 pt-4 mt-auto">
+                <button onclick="resetApp()" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
+                    Mainkan Ulang
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- DATA: 30 Questions based on provided document ---
+        const rawQuestions = [
+            {
+                q: "Ciri utama pajak terkait penerimaan balas jasa adalah...",
+                options: [{t: "Tidak diterima secara langsung", c: true}, {t: "Diterima langsung", c: false}, {t: "Diterima lewat pemda", c: false}, {t: "Diberikan berupa barang", c: false}]
+            },
+            {
+                q: "Pungutan oleh pemerintah kepada masyarakat karena menggunakan fasilitas negara disebut...",
+                options: [{t: "Retribusi", c: true}, {t: "Pajak", c: false}, {t: "Cukai", c: false}, {t: "Sumbangan", c: false}]
+            },
+            {
+                q: "Pihak yang berwenang melakukan penarikan retribusi adalah...",
+                options: [{t: "Pemerintah daerah", c: true}, {t: "Pemerintah pusat", c: false}, {t: "BUMN", c: false}, {t: "Kepolisian", c: false}]
+            },
+            {
+                q: "Berikut ini yang merupakan contoh dari pungutan retribusi adalah...",
+                options: [{t: "Parkir kendaraan", c: true}, {t: "Pajak Penghasilan", c: false}, {t: "Bea Materai", c: false}, {t: "Cukai rokok", c: false}]
+            },
+            {
+                q: "Salah satu perbedaan pajak dan retribusi dari sisi perhitungan besaran pungutan adalah...",
+                options: [{t: "Pajak dihitung sendiri oleh wajib pajak, retribusi ditentukan pemda", c: true}, {t: "Pajak ditentukan pemda, retribusi dihitung sendiri", c: false}, {t: "Keduanya dihitung pemda", c: false}, {t: "Keduanya dihitung wajib pajak", c: false}]
+            },
+            {
+                q: "Jatuh tempo pembayaran pajak pada umumnya disesuaikan dengan...",
+                options: [{t: "Tahun fiskal", c: true}, {t: "Pemakaian fasilitas", c: false}, {t: "Masa jabatan", c: false}, {t: "Umur wajib pajak", c: false}]
+            },
+            {
+                q: "Jatuh tempo untuk pembayaran retribusi didasarkan pada...",
+                options: [{t: "Pemakaian", c: true}, {t: "Tahun fiskal", c: false}, {t: "Akhir bulan", c: false}, {t: "Ketetapan presiden", c: false}]
+            },
+            {
+                q: "Hal yang dikenakan pajak dan menjadi dasar perhitungan pajak terutang disebut...",
+                options: [{t: "Objek pajak", c: true}, {t: "Subjek pajak", c: false}, {t: "Tarif pajak", c: false}, {t: "Fungsi pajak", c: false}]
+            },
+            {
+                q: "Orang yang membayar pajak disebut sebagai...",
+                options: [{t: "Subjek pajak", c: true}, {t: "Objek pajak", c: false}, {t: "Wajib lapor", c: false}, {t: "Pemungut pajak", c: false}]
+            },
+            {
+                q: "Dasar pengenaan besarnya pajak yang harus dibayar subjek pajak disebut...",
+                options: [{t: "Tarif pajak", c: true}, {t: "Objek pajak", c: false}, {t: "Norma hukum", c: false}, {t: "APBN", c: false}]
+            },
+            {
+                q: "Berikut ini yang BUKAN merupakan subjek pajak adalah...",
+                options: [{t: "Pejabat perwakilan diplomatik", c: true}, {t: "Orang pribadi", c: false}, {t: "Badan usaha", c: false}, {t: "Warisan yang belum terbagi", c: false}]
+            },
+            {
+                q: "Salah satu contoh dari Objek Pajak adalah...",
+                options: [{t: "Penghasilan", c: true}, {t: "Orang pribadi", c: false}, {t: "Organisasi internasional", c: false}, {t: "Pemerintah daerah", c: false}]
+            },
+            {
+                q: "Tarif pajak yang nominalnya selalu tetap meskipun dasar pengenaan pajaknya berubah disebut...",
+                options: [{t: "Tarif tetap", c: true}, {t: "Tarif proporsional", c: false}, {t: "Tarif progresif", c: false}, {t: "Tarif degresif", c: false}]
+            },
+            {
+                q: "Contoh penerapan tarif tetap dalam perpajakan adalah...",
+                options: [{t: "Bea materai", c: true}, {t: "Pajak Pertambahan Nilai", c: false}, {t: "Pajak Penghasilan", c: false}, {t: "Pajak Kendaraan Bermotor", c: false}]
+            },
+            {
+                q: "Tarif pajak yang persentasenya tetap terhadap jumlah berapapun yang menjadi dasar pengenaan pajak adalah...",
+                options: [{t: "Tarif proporsional", c: true}, {t: "Tarif tetap", c: false}, {t: "Tarif progresif", c: false}, {t: "Tarif degresif", c: false}]
+            },
+            {
+                q: "Pajak Pertambahan Nilai (PPN 12%) menggunakan jenis tarif...",
+                options: [{t: "Tarif proporsional", c: true}, {t: "Tarif tetap", c: false}, {t: "Tarif progresif", c: false}, {t: "Tarif degresif", c: false}]
+            },
+            {
+                q: "Tarif pajak yang persentasenya semakin besar jika dasar pengenaan pajaknya meningkat disebut...",
+                options: [{t: "Tarif progresif", c: true}, {t: "Tarif degresif", c: false}, {t: "Tarif tetap", c: false}, {t: "Tarif proporsional", c: false}]
+            },
+            {
+                q: "Contoh pajak yang menggunakan tarif progresif adalah...",
+                options: [{t: "Pajak Penghasilan (PPh)", c: true}, {t: "PPN 12%", c: false}, {t: "Bea materai", c: false}, {t: "Cukai rokok", c: false}]
+            },
+            {
+                q: "Tarif pajak yang persentasenya semakin kecil jika dasar pengenaan pajaknya semakin meningkat disebut...",
+                options: [{t: "Tarif degresif", c: true}, {t: "Tarif progresif", c: false}, {t: "Tarif tetap", c: false}, {t: "Tarif proporsional", c: false}]
+            },
+            {
+                q: "Pajak sebagai penerimaan negara yang diperuntukkan bagi pembiayaan pengeluaran pemerintah merupakan fungsi...",
+                options: [{t: "Anggaran (Budgeter)", c: true}, {t: "Mengatur (Regulasi)", c: false}, {t: "Meratakan pendapatan", c: false}, {t: "Stabilitas", c: false}]
+            },
+            {
+                q: "Pajak yang digunakan sebagai alat pengatur dan melaksanakan kebijakan di bidang sosial ekonomi (contoh pajak minuman keras) adalah penerapan fungsi...",
+                options: [{t: "Mengatur (Regulasi)", c: true}, {t: "Anggaran", c: false}, {t: "Distribusi", c: false}, {t: "APBN", c: false}]
+            },
+            {
+                q: "Pajak yang digunakan sebagai sarana sosial dengan jalan pemerataan pendapatan masyarakat (contoh tarif progresif) adalah fungsi...",
+                options: [{t: "Meratakan pendapatan (Distribusi)", c: true}, {t: "Anggaran", c: false}, {t: "Mengatur", c: false}, {t: "Retribusi", c: false}]
+            },
+            {
+                q: "Pajak yang dipungut pemerintah melalui Dirjen Pajak dan kantor inspeksi pajak disebut...",
+                options: [{t: "Pajak Negara", c: true}, {t: "Pajak Daerah", c: false}, {t: "Pajak Subjektif", c: false}, {t: "Pajak Langsung", c: false}]
+            },
+            {
+                q: "Berikut ini yang merupakan contoh Pajak Negara adalah...",
+                options: [{t: "Pajak Penghasilan dan PPN", c: true}, {t: "Pajak Restoran dan Hiburan", c: false}, {t: "Pajak Kendaraan Bermotor", c: false}, {t: "Pajak Reklame", c: false}]
+            },
+            {
+                q: "Pajak kendaraan bermotor dan bea balik nama kendaraan termasuk ke dalam...",
+                options: [{t: "Pajak Provinsi", c: true}, {t: "Pajak Kabupaten/Kota", c: false}, {t: "Pajak Pusat", c: false}, {t: "Pajak Objektif", c: false}]
+            },
+            {
+                q: "Pajak hotel, restoran, hiburan, dan reklame dikelola sebagai...",
+                options: [{t: "Pajak Kabupaten/Kota", c: true}, {t: "Pajak Provinsi", c: false}, {t: "Pajak Negara", c: false}, {t: "Retribusi daerah", c: false}]
+            },
+            {
+                q: "Pajak yang harus ditanggung sendiri oleh wajib pajak dan tidak dapat dialihkan kepada orang lain disebut...",
+                options: [{t: "Pajak Langsung", c: true}, {t: "Pajak Tidak Langsung", c: false}, {t: "Pajak Objektif", c: false}, {t: "Pajak Daerah", c: false}]
+            },
+            {
+                q: "Pajak yang pembayarannya dapat dialihkan kepada orang lain (contoh PPN) disebut...",
+                options: [{t: "Pajak Tidak Langsung", c: true}, {t: "Pajak Langsung", c: false}, {t: "Pajak Subjektif", c: false}, {t: "Pajak Provinsi", c: false}]
+            },
+            {
+                q: "Pajak yang dalam pelaksanaannya memperhatikan keadaan atau kemampuan wajib pajak disebut...",
+                options: [{t: "Pajak Subjektif", c: true}, {t: "Pajak Objektif", c: false}, {t: "Pajak Langsung", c: false}, {t: "Pajak Daerah", c: false}]
+            },
+            {
+                q: "Pajak yang berfokus pada nilai kebendaan atau manfaatnya tanpa memperhatikan kemampuan wajib pajak disebut...",
+                options: [{t: "Pajak Objektif", c: true}, {t: "Pajak Subjektif", c: false}, {t: "Pajak Negara", c: false}, {t: "Pajak Penghasilan", c: false}]
+            }
+        ];
+
+        // --- APP STATE ---
+        let appState = {
+            playerName: "",
+            durationSetting: 15,
+            questions: [], // Shuffled copy
+            currentIndex: 0,
+            score: 0,
+            userReviewData: [],
+            timerId: null,
+            timeLeft: 0,
+            isAnswering: false // Prevent multiple clicks
+        };
+
+        // --- DOM ELEMENTS ---
+        const els = {
+            startScreen: document.getElementById('start-screen'),
+            quizScreen: document.getElementById('quiz-screen'),
+            endScreen: document.getElementById('end-screen'),
+            
+            playerNameInput: document.getElementById('player-name'),
+            errorMsg: document.getElementById('error-msg'),
+            
+            qNumText: document.getElementById('current-q-num'),
+            quizPlayerNameDisplay: document.getElementById('quiz-player-name-display'),
+            timerDisplay: document.getElementById('timer-display'),
+            timerBar: document.getElementById('timer-bar'),
+            qText: document.getElementById('question-text'),
+            optionsContainer: document.getElementById('options-container'),
+            statusMsg: document.getElementById('status-msg'),
+            
+            displayName: document.getElementById('display-name'),
+            finalScore: document.getElementById('final-score'),
+            correctCount: document.getElementById('correct-count'),
+            reviewList: document.getElementById('review-list')
+        };
+
+        // --- HELPER FUNCTIONS ---
+        // Fisher-Yates shuffle
+        function shuffleArray(array) {
+            let curId = array.length;
+            while (0 !== curId) {
+                let randId = Math.floor(Math.random() * curId);
+                curId -= 1;
+                let tmp = array[curId];
+                array[curId] = array[randId];
+                array[randId] = tmp;
+            }
+            return array;
+        }
+
+        function switchScreen(hideEl, showEl) {
+            hideEl.classList.add('hidden');
+            hideEl.classList.remove('flex');
+            showEl.classList.remove('hidden');
+            
+            // Adjust display based on screen type
+            if (showEl === els.quizScreen || showEl === els.endScreen) {
+                showEl.classList.add('flex');
+            }
+        }
+
+        function getCorrectOptionText(optionsArray) {
+            const correctOpt = optionsArray.find(opt => opt.c === true);
+            return correctOpt ? correctOpt.t : "Tidak diketahui";
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#22c55e', '#3b82f6', '#facc15', '#ef4444']
+            });
+        }
+
+        // --- CORE LOGIC ---
+
+        function startQuiz() {
+            const nameInput = els.playerNameInput.value.trim();
+            if (nameInput === "") {
+                els.errorMsg.classList.remove('hidden');
+                return;
+            }
+            els.errorMsg.classList.add('hidden');
+
+            const durationInput = document.querySelector('input[name="duration"]:checked').value;
+
+            // Reset and Initialize state
+            appState = {
+                playerName: nameInput,
+                durationSetting: parseInt(durationInput),
+                questions: [],
+                currentIndex: 0,
+                score: 0,
+                userReviewData: [],
+                timerId: null,
+                timeLeft: 0,
+                isAnswering: false
+            };
+
+            // Deep copy and shuffle questions
+            const copiedQuestions = JSON.parse(JSON.stringify(rawQuestions));
+            appState.questions = shuffleArray(copiedQuestions);
+            // Shuffle options for each question
+            appState.questions.forEach(q => {
+                q.options = shuffleArray(q.options);
+            });
+
+            els.quizPlayerNameDisplay.innerText = "Pemain: " + nameInput;
+
+            switchScreen(els.startScreen, els.quizScreen);
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            appState.isAnswering = false;
+            els.statusMsg.style.opacity = '0';
+            els.statusMsg.innerHTML = '';
+            
+            const currentQ = appState.questions[appState.currentIndex];
+            
+            // Update UI Counters
+            els.qNumText.innerText = appState.currentIndex + 1;
+            els.qText.innerText = currentQ.q;
+            
+            // Render Options
+            els.optionsContainer.innerHTML = '';
+            currentQ.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl font-medium option-btn btn-default text-base sm:text-lg focus:outline-none focus:ring-4 focus:ring-blue-300";
+                
+                // Add prefix A, B, C, D visually
+                const prefix = String.fromCharCode(65 + index); // 65 is 'A'
+                btn.innerHTML = `<span class="inline-block w-8 font-bold opacity-80">${prefix}.</span> ${opt.t}`;
+                
+                btn.onclick = () => handleAnswer(btn, opt);
+                // Store correct status in dataset for timeout resolution
+                btn.dataset.isCorrect = opt.c; 
+                btn.dataset.textValue = opt.t;
+                
+                els.optionsContainer.appendChild(btn);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            appState.timeLeft = appState.durationSetting;
+            updateTimerUI();
+            
+            // Initial bar setup
+            els.timerBar.style.width = '100%';
+            els.timerBar.style.transition = `width ${appState.durationSetting}s linear`;
+            
+            // Trigger reflow to restart animation
+            void els.timerBar.offsetWidth;
+            els.timerBar.style.width = '0%';
+
+            appState.timerId = setInterval(() => {
+                appState.timeLeft--;
+                updateTimerUI();
+
+                if (appState.timeLeft <= 0) {
+                    clearInterval(appState.timerId);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            els.timerDisplay.innerText = appState.timeLeft;
+            if (appState.timeLeft <= 5) {
+                els.timerDisplay.classList.add('text-red-600', 'animate-pulse');
+            } else {
+                els.timerDisplay.classList.remove('text-red-600', 'animate-pulse');
+            }
+        }
+
+        function stopTimer() {
+            if (appState.timerId) {
+                clearInterval(appState.timerId);
+            }
+            // Stop the bar animation
+            const computedWidth = window.getComputedStyle(els.timerBar).width;
+            els.timerBar.style.transition = 'none';
+            els.timerBar.style.width = computedWidth;
+        }
+
+        function disableAllOptions() {
+            const buttons = els.optionsContainer.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+        }
+
+        function highlightCorrectAnswer() {
+            const buttons = els.optionsContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                if (btn.dataset.isCorrect === 'true') {
+                    btn.classList.remove('btn-default');
+                    btn.classList.add('btn-correct');
+                }
+            });
+        }
+
+        function handleAnswer(selectedBtn, optionData) {
+            if (appState.isAnswering) return;
+            appState.isAnswering = true;
+            stopTimer();
+            disableAllOptions();
+
+            const isCorrect = optionData.c;
+            const currentQ = appState.questions[appState.currentIndex];
+            const correctText = getCorrectOptionText(currentQ.options);
+
+            // Record data for review
+            appState.userReviewData.push({
+                question: currentQ.q,
+                userPicked: optionData.t,
+                correctAnswer: correctText,
+                isCorrect: isCorrect
+            });
+
+            // UI Feedback
+            selectedBtn.classList.remove('btn-default');
+            if (isCorrect) {
+                appState.score++;
+                selectedBtn.classList.add('btn-correct');
+                triggerConfetti();
+                showStatusMessage("Jawaban Benar!", "text-green-600");
+            } else {
+                selectedBtn.classList.add('btn-wrong');
+                highlightCorrectAnswer();
+                showStatusMessage("Jawaban Salah!", "text-red-600");
+            }
+
+            // Proceed to next
+            setTimeout(nextQuestion, 2500);
+        }
+
+        function handleTimeOut() {
+            if (appState.isAnswering) return;
+            appState.isAnswering = true;
+            disableAllOptions();
+
+            const currentQ = appState.questions[appState.currentIndex];
+            const correctText = getCorrectOptionText(currentQ.options);
+
+            // Record as wrong/timeout
+            appState.userReviewData.push({
+                question: currentQ.q,
+                userPicked: "Kehabisan Waktu",
+                correctAnswer: correctText,
+                isCorrect: false
+            });
+
+            highlightCorrectAnswer();
+            showStatusMessage("Waktu Habis!", "text-orange-500");
+
+            setTimeout(nextQuestion, 2500);
+        }
+
+        function showStatusMessage(text, colorClass) {
+            els.statusMsg.innerHTML = `<span class="${colorClass}">${text}</span>`;
+            els.statusMsg.style.opacity = '1';
+        }
+
+        function nextQuestion() {
+            appState.currentIndex++;
+            if (appState.currentIndex < appState.questions.length) {
+                loadQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            const totalQ = appState.questions.length;
+            const calculatedScore = Math.round((appState.score / totalQ) * 100);
+            
+            els.displayName.innerText = appState.playerName;
+            els.finalScore.innerText = calculatedScore;
+            els.correctCount.innerText = appState.score;
+
+            // Build Review List
+            els.reviewList.innerHTML = '';
+            appState.userReviewData.forEach((item, index) => {
+                const isCorrect = item.isCorrect;
+                
+                const reviewCard = document.createElement('div');
+                reviewCard.className = `p-4 rounded-xl border-l-4 shadow-sm bg-white ${isCorrect ? 'border-green-500' : 'border-red-500'}`;
+                
+                // Icon based on correctness
+                const icon = isCorrect 
+                    ? `<svg class="w-5 h-5 text-green-500 inline mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>`
+                    : `<svg class="w-5 h-5 text-red-500 inline mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>`;
+
+                const bgColorPicked = isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+
+                reviewCard.innerHTML = `
+                    <div class="font-medium text-gray-800 text-sm mb-2">
+                        ${index + 1}. ${item.question}
+                    </div>
+                    <div class="text-sm space-y-1">
+                        <div class="flex items-start">
+                            <span class="w-20 text-gray-500 font-semibold shrink-0">Pilihanmu</span>
+                            <span class="px-2 py-0.5 rounded ${bgColorPicked} font-medium break-words">${icon}${item.userPicked}</span>
+                        </div>
+                        ${!isCorrect ? `
+                        <div class="flex items-start mt-1">
+                            <span class="w-20 text-gray-500 font-semibold shrink-0">Jawaban</span>
+                            <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-medium break-words"><svg class="w-4 h-4 text-blue-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>${item.correctAnswer}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                els.reviewList.appendChild(reviewCard);
+            });
+
+            switchScreen(els.quizScreen, els.endScreen);
+        }
+
+        function resetApp() {
+            // Ensure timer is completely stopped before resetting
+            stopTimer(); 
+            // Clear inputs temporarily if needed, though we keep name for convenience
+            switchScreen(els.endScreen, els.startScreen);
+        }
+
+        // Initialize: ensure start screen is active on load
+        window.onload = () => {
+            els.startScreen.classList.remove('hidden');
+        };
+
+    </script>
+</body>
+</html>
